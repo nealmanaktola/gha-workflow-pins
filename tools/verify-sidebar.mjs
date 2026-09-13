@@ -150,6 +150,58 @@ check('favorites persist across a reload', reloaded.favorites === ids.length, `$
 check('no cached placeholders are left behind', reloaded.cached === 0, `${reloaded.cached}`);
 check('headers survive a reload', reloaded.headers.length === 2, `${reloaded.headers.length}`);
 
+// Favoriting one workflow must leave the header standing. A storage-change
+// echo of this tab's own write used to clear the favorites a moment later,
+// so the header appeared and then vanished. Anything that settles late shows
+// up here, which a check taken straight after the click would miss.
+// A second repository, so this starts with no favorites. Favorites are stored
+// per repository, and reusing the first one meant clicking the leading star
+// removed a favorite instead of adding one.
+const SOLO_REPO = process.env.SOLO_REPO || 'home-assistant/frontend';
+const solo = await context.newPage();
+await solo.goto(`https://github.com/${SOLO_REPO}/actions`, { waitUntil: 'domcontentloaded' });
+await solo.waitForSelector('.ghapin-filter', { timeout: 30000 });
+await solo
+  .waitForFunction(() => document.querySelector('.ghapin-count')?.textContent !== 'loading…', {
+    timeout: 40000,
+  })
+  .catch(() => {});
+
+const readSolo = () =>
+  solo.evaluate(() => ({
+    headers: [...document.querySelectorAll('.ghapin-header')]
+      .filter((h) => h.style.display !== 'none')
+      .map((h) => h.querySelector('h3')?.textContent),
+    favorites: document.querySelectorAll('.ghapin-row[data-ghapin-group="favorites"]').length,
+  }));
+
+const before = await solo.evaluate(() => ({
+  favorites: document.querySelectorAll('.ghapin-row[data-ghapin-group="favorites"]').length,
+  visible: [...document.querySelectorAll('.ghapin-row')].filter((r) => r.style.display !== 'none')
+    .length,
+}));
+check('the second repository starts with no favorites', before.favorites === 0, `${before.favorites}`);
+// A group collapsed on another repository must not hide a list that has no
+// header to expand it again.
+check(
+  'a repository with no favorites still shows its workflows',
+  before.visible > 0,
+  `${before.visible} visible`
+);
+await solo.locator('.ghapin-row .ghapin-star').first().click({ force: true });
+await solo.waitForTimeout(400);
+const justAfter = await readSolo();
+check('header appears when the first favorite is added', justAfter.headers.length === 2, justAfter.headers.join(' + '));
+
+await solo.waitForTimeout(4000);
+const settled = await readSolo();
+check(
+  'the header is still there four seconds later',
+  settled.headers.length === 2,
+  settled.headers.join(' + ') || 'no headers'
+);
+check('the favorite is still there four seconds later', settled.favorites === 1, `${settled.favorites}`);
+
 // A failed partial load must not take the favorites, or the headers, with it.
 // This is what Firefox does until the user grants access to github.com.
 const blocked = await context.newPage();

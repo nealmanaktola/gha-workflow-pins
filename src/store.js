@@ -133,6 +133,11 @@ function createStore(api) {
   }
 
   // Never let a full or disabled sync area lose a pin. Fall back to local.
+  //
+  // A sync write is also mirrored to local. Some browsers accept a sync write
+  // and then answer the next sync read with nothing, which used to read as
+  // "this repo has no favorites". The local copy means a read always finds
+  // them, whatever sync does.
   async function writeKey(key, value) {
     const apply = async (area) => {
       if (value === undefined) await area.remove(key);
@@ -141,11 +146,17 @@ function createStore(api) {
     const primary = await preferredArea();
     try {
       await apply(primary);
-      return primary === api.storage.sync ? 'sync' : 'local';
     } catch {
       await apply(api.storage.local);
       return 'local';
     }
+    if (primary === api.storage.local) return 'local';
+    try {
+      await apply(api.storage.local);
+    } catch {
+      /* the mirror is a safety net, not the source of truth */
+    }
+    return 'sync';
   }
 
   async function getPins(slug) {

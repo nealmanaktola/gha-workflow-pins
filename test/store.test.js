@@ -310,3 +310,43 @@ test('allRemoved skips repos with nothing pending', async () => {
   await store.rememberRemoved('acme/gadgets', {});
   assert.deepEqual(Object.keys(await store.allRemoved()), ['acme/widgets']);
 });
+
+// --- A sync area that accepts writes but reads back empty --------------------
+
+test('a sync write is mirrored to local', async () => {
+  const api = new FakeApi();
+  const store = createStore(api);
+  await store.setPins('acme/widgets', ['ci.yaml']);
+  assert.deepEqual(api.storage.sync.data.get('pins:acme/widgets'), ['ci.yaml']);
+  assert.deepEqual(api.storage.local.data.get('pins:acme/widgets'), ['ci.yaml']);
+});
+
+test('favorites survive a sync area that reads back empty', async () => {
+  const sync = new FakeStorageArea();
+  const store = createStore(new FakeApi({ sync }));
+  await store.setPins('acme/widgets', ['ci.yaml', 'e2e.yaml']);
+
+  // Accepts writes, answers reads with nothing. This emptied the sidebar.
+  sync.data.clear();
+
+  assert.deepEqual(await store.getPins('acme/widgets'), ['ci.yaml', 'e2e.yaml']);
+});
+
+test('unpinning everything clears both areas', async () => {
+  const api = new FakeApi();
+  const store = createStore(api);
+  await store.setPins('acme/widgets', ['ci.yaml']);
+  await store.setPins('acme/widgets', []);
+  assert.equal(api.storage.sync.data.has('pins:acme/widgets'), false);
+  assert.equal(api.storage.local.data.has('pins:acme/widgets'), false);
+  assert.deepEqual(await store.getPins('acme/widgets'), []);
+});
+
+test('the mirror does not resurrect a favorite removed on another device', async () => {
+  const api = new FakeApi();
+  const store = createStore(api);
+  await store.setPins('acme/widgets', ['ci.yaml', 'e2e.yaml']);
+  await store.togglePin('acme/widgets', 'e2e.yaml');
+  assert.deepEqual(await store.getPins('acme/widgets'), ['ci.yaml']);
+  assert.deepEqual(api.storage.local.data.get('pins:acme/widgets'), ['ci.yaml']);
+});

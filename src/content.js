@@ -18,6 +18,7 @@
   let favorites = [];
   let collapsed = {};
   let signature = '';
+  let lastWrite = 0;
 
   const repoSlug = () => {
     const m = location.pathname.match(/^\/([^/]+)\/([^/]+)(?:\/|$)/);
@@ -313,9 +314,17 @@
   }
 
   function applyFilter(query) {
-    const container = document.querySelector(`.${WRAP_CLASS}`)?.nextElementSibling;
+    const container = findList()?.container;
     if (!container) return;
     const searching = Boolean(query.trim());
+
+    // Only a group with a header can be rolled up, because the header is the
+    // only way to roll it back down. Without this, a group collapsed on one
+    // repository hid every row on the next one, which has no header of its
+    // own, and left an empty sidebar with no way to recover.
+    const foldable = new Set(
+      [...container.querySelectorAll(`.${HEADER_CLASS}`)].map((h) => h.getAttribute(GROUP_ATTR))
+    );
 
     const matched = new Map();
     const distinct = new Set();
@@ -327,7 +336,8 @@
       const key = el.getAttribute(GROUP_ATTR);
       // A group the user rolled up stays rolled up, unless they are searching.
       // A search that hides its own results is not a search.
-      const hidden = !hit || (collapsed[key] && !searching);
+      const rolledUp = collapsed[key] && foldable.has(key);
+      const hidden = !hit || (rolledUp && !searching);
       el.style.display = hidden ? 'none' : '';
       if (!hit) continue;
       matched.set(key, (matched.get(key) || 0) + 1);
@@ -359,7 +369,9 @@
   async function onToggle(id) {
     const slug = repoSlug();
     if (!slug) return;
+    lastWrite = Date.now();
     favorites = await GhaStore.togglePin(slug, id);
+    lastWrite = Date.now();
     render();
   }
 
@@ -508,11 +520,22 @@
     await reconcileFavorites(slug, loaded, complete);
   }
 
-  GhaApi.storage.onChanged.addListener(async () => {
+  // Another tab or another device changed the favorites. Take the value the
+  // event carries: reading storage back can answer from a different area than
+  // the write went to, and an empty answer would silently clear the sidebar.
+  //
+  // An echo of this tab's own write is ignored. onToggle already holds the
+  // authoritative list, and letting the echo overwrite it made a new favorite,
+  // and its header, appear and then vanish a moment later.
+  GhaApi.storage.onChanged.addListener((changes) => {
     const slug = repoSlug();
-    if (!slug || !onActionsPage()) return;
-    const next = await GhaStore.getPins(slug);
-    if (next.join(' ') === favorites.join(' ')) return;
+    if (!slug || !onActionsPage() || !changes) return;
+    const change = changes[`pins:${slug}`];
+    if (!change) return;
+    if (Date.now() - lastWrite < 2000) return;
+
+    const next = Array.isArray(change.newValue) ? change.newValue : [];
+    if (next.join(',') === favorites.join(',')) return;
     favorites = next;
     render();
   });
