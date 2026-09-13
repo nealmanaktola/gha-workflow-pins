@@ -9,7 +9,8 @@
     "package": "bash tools/package.sh",
     "lint:firefox": "npx --yes web-ext lint --source-dir .",
     "verify:pagination": "node tools/verify-pagination.mjs",
-    "screenshot": "node tools/screenshot.mjs"
+    "screenshot": "node tools/screenshot.mjs",
+    "verify:sidebar": "node tools/verify-sidebar.mjs"
   },
   "license": "MIT"
 }

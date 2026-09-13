@@ -332,14 +332,15 @@
     rendering = true;
     observer?.disconnect();
     try {
-      for (const stale of document.querySelectorAll(`.${HEADER_CLASS}`)) stale.remove();
-
       const model = findList();
       if (!model) return;
 
+      // Decide before touching anything. Clearing the old headers first would
+      // strip them on every skipped render and never put them back.
       const next = `${favorites.join(',')}|${model.rows.map((row) => row.id).join(',')}`;
       if (next === signature && document.querySelector(`.${WRAP_CLASS}`)) return;
 
+      for (const stale of document.querySelectorAll(`.${HEADER_CLASS}`)) stale.remove();
       for (const row of model.rows) decorate(row, row.el, onToggle);
 
       const groups = visibleGroups(groupRows(model.rows, { favorites }));

@@ -105,6 +105,7 @@ npm run icons         # redraw icons/*.png with the standard library
 npm run package       # build dist/*.zip for both stores
 npm run lint:firefox  # web-ext lint, downloads web-ext on demand
 npm run verify:pagination   # walk the live partial endpoint, page by page
+npm run verify:sidebar      # 13 DOM checks in a real browser, exits non-zero on failure
 npm run screenshot          # drive a real browser, retake docs/*.png
 ```
 
@@ -128,8 +129,14 @@ so an extension never loads there and every check silently reports nothing.
 | `src/popup.*`    | Toolbar popup for the current repository.                          |
 | `src/options.*`  | Sync toggle, export, import, clear, full pin list.                 |
 
-`store.js` and `match.js` hold the logic and have unit tests. `content.js` holds the DOM work and
-has none, because it needs a real browser.
+`store.js` and `match.js` hold the logic and have unit tests. `content.js` holds the DOM work,
+which unit tests cannot reach, so `npm run verify:sidebar` checks it in a real browser: every page
+loaded, no star overlapping a GitHub icon, both headers present after a no-op render, after
+filtering, after collapsing and after a reload, and no cached placeholder rows left behind.
+
+Write those checks so they fail against the bug they describe. An early version poked
+`document.body` to force a re-render, but the observer only watches the sidebar, so no render ever
+happened and all 12 checks passed against a build with a real header bug in it.
 
 ### How it survives GitHub redesigns
 
