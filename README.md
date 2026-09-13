@@ -23,8 +23,34 @@ uses, then hides that button. The filter therefore searches everything.
 Every page is fetched at once rather than one after another, so the cost is one round trip instead
 of one per page. Favorites do not wait for any of it: the extension caches each workflow's display
 name, draws the favorites group from that cache immediately, and swaps in the real rows when they
-arrive. A favorite whose workflow has actually been deleted is dropped, but only after a clean
-load, because a failed request also looks like a short list and must never delete your favorites.
+arrive.
+
+## Your favorites are not deleted by accident
+
+A favorite whose workflow no longer exists is dropped from the sidebar. Dropping one is not
+something you asked for, so every doubt resolves in favour of keeping it. A favorite is only ever
+dropped when all of these hold:
+
+- every page of the workflow list loaded without a single failed request
+- the sidebar rendered at least one workflow
+- the change would not remove every favorite at once
+
+Each of those states is indistinguishable from "the repository really did delete them", and each
+is far more likely to mean a failed request, an expired session, or a half-rendered page.
+
+Whatever is dropped is kept. The options page lists it under **Removed automatically**, with the
+workflow name and the date, and a **Restore** button that puts it back.
+
+### Upgrading over existing favorites
+
+Favorites are safe across updates. Every released version has stored them the same way, as
+`pins:<owner>/<repo>` holding an ordered array of workflow ids, and nothing has ever rewritten that
+shape. Later versions added `__collapsed`, `names:` and `removed:` as separate local keys, so they
+add to your data rather than reinterpret it. A `pins:` value that is not an array reads as empty
+instead of throwing. Tests cover reading favorites written by an earlier version, including ids
+with a path segment such as `agents/copilot-pull-request-reviewer`.
+
+Export from the options page first if you want a copy regardless.
 
 ## Install for development
 

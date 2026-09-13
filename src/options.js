@@ -63,11 +63,56 @@ async function renderPins() {
   for (const slug of slugs) container.append(repoBlock(slug, pins[slug], refresh));
 }
 
+function removedBlock(slug, entries, onChange) {
+  const wrap = document.createElement('div');
+  wrap.className = 'repo';
+
+  const title = document.createElement('h3');
+  title.textContent = slug;
+
+  const list = document.createElement('ul');
+  list.className = 'pin-list';
+  for (const [id, entry] of Object.entries(entries)) {
+    const li = document.createElement('li');
+
+    const name = document.createElement('span');
+    const when = entry.at ? new Date(entry.at).toLocaleDateString() : '';
+    name.textContent = when ? `${entry.label || id} — dropped ${when}` : entry.label || id;
+
+    const restore = document.createElement('button');
+    restore.type = 'button';
+    restore.className = 'link-button';
+    restore.textContent = 'Restore';
+    restore.addEventListener('click', async () => {
+      await GhaStore.restoreRemoved(slug, [id]);
+      say(`Restored ${entry.label || id}.`);
+      onChange();
+    });
+
+    li.append(name, restore);
+    list.append(li);
+  }
+
+  wrap.append(title, list);
+  return wrap;
+}
+
+async function renderRemoved() {
+  const section = $('removed-section');
+  const container = $('removed');
+  container.replaceChildren();
+  const removed = await GhaStore.allRemoved();
+  const slugs = Object.keys(removed).sort();
+  section.hidden = !slugs.length;
+  for (const slug of slugs) container.append(removedBlock(slug, removed[slug], refresh));
+}
+
 async function refresh() {
   const settings = await GhaStore.getSettings();
   $('sync').checked = settings.area === 'sync';
   $('area').textContent = await GhaStore.activeAreaName();
   await renderPins();
+  await renderRemoved();
 }
 
 $('sync').addEventListener('change', async (event) => {

@@ -237,3 +237,76 @@ test('clearing pins leaves the name cache alone', async () => {
   await store.clearAll();
   assert.deepEqual(await store.getNames('acme/widgets'), { 'ci.yaml': 'CI' });
 });
+
+// --- Upgrading over favorites written by an earlier version ------------------
+
+test('favorites written by an earlier version are read unchanged', async () => {
+  const api = new FakeApi();
+  // Exactly what every released version has written: an array of ids.
+  api.storage.sync.data.set('pins:acme/widgets', ['ci.yaml', 'agents/copilot']);
+  const store = createStore(api);
+
+  assert.deepEqual(await store.getPins('acme/widgets'), ['ci.yaml', 'agents/copilot']);
+  assert.deepEqual(await store.allPins(), { 'acme/widgets': ['ci.yaml', 'agents/copilot'] });
+});
+
+test('the newer keys do not disturb existing favorites', async () => {
+  const api = new FakeApi();
+  api.storage.sync.data.set('pins:acme/widgets', ['ci.yaml']);
+  const store = createStore(api);
+
+  await store.setCollapsed('all', true);
+  await store.rememberNames('acme/widgets', { 'ci.yaml': 'CI' });
+
+  assert.deepEqual(await store.getPins('acme/widgets'), ['ci.yaml']);
+});
+
+test('a favorite with a path segment survives a round trip', async () => {
+  const store = createStore(new FakeApi());
+  const id = 'agents/copilot-pull-request-reviewer';
+  await store.setPins('acme/widgets', [id]);
+  assert.deepEqual(await store.getPins('acme/widgets'), [id]);
+});
+
+test('junk in the pins key reads as empty rather than throwing', async () => {
+  const api = new FakeApi();
+  api.storage.sync.data.set('pins:acme/widgets', 'not-an-array');
+  const store = createStore(api);
+  assert.deepEqual(await store.getPins('acme/widgets'), []);
+});
+
+// --- Removals are recoverable ------------------------------------------------
+
+test('a removed favorite is recorded with its name', async () => {
+  const store = createStore(new FakeApi());
+  await store.rememberRemoved('acme/widgets', { 'gone.yaml': { label: 'Gone', at: 1 } });
+  assert.deepEqual(await store.getRemoved('acme/widgets'), {
+    'gone.yaml': { label: 'Gone', at: 1 },
+  });
+});
+
+test('restoring puts the favorite and its name back', async () => {
+  const store = createStore(new FakeApi());
+  await store.setPins('acme/widgets', ['ci.yaml']);
+  await store.rememberRemoved('acme/widgets', { 'gone.yaml': { label: 'Gone', at: 1 } });
+
+  await store.restoreRemoved('acme/widgets', ['gone.yaml']);
+
+  assert.deepEqual(await store.getPins('acme/widgets'), ['ci.yaml', 'gone.yaml']);
+  assert.deepEqual(await store.getNames('acme/widgets'), { 'gone.yaml': 'Gone' });
+  assert.deepEqual(await store.getRemoved('acme/widgets'), {});
+});
+
+test('restoring something that was never removed changes nothing', async () => {
+  const store = createStore(new FakeApi());
+  await store.setPins('acme/widgets', ['ci.yaml']);
+  await store.restoreRemoved('acme/widgets', ['never-seen.yaml']);
+  assert.deepEqual(await store.getPins('acme/widgets'), ['ci.yaml']);
+});
+
+test('allRemoved skips repos with nothing pending', async () => {
+  const store = createStore(new FakeApi());
+  await store.rememberRemoved('acme/widgets', { 'gone.yaml': { label: 'Gone', at: 1 } });
+  await store.rememberRemoved('acme/gadgets', {});
+  assert.deepEqual(Object.keys(await store.allRemoved()), ['acme/widgets']);
+});

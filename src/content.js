@@ -401,13 +401,28 @@
   }
 
   // Once the full list is in, a favorite that is still missing no longer
-  // exists. Drop it, but only after a clean load: a failed fetch looks like a
-  // short list, and that must never delete someone's favorites.
+  // exists. Dropping one is not something the user asked for, so every doubt
+  // resolves in favour of keeping it:
+  //
+  //   - a failed fetch looks exactly like a short list, so complete must hold
+  //   - an empty sidebar means the page did not render, not that every
+  //     workflow was deleted
+  //   - losing every favorite at once is a broken read, not a real repository
+  //
+  // What is dropped is kept, so the options page can put it back.
   async function reconcileFavorites(slug, model, complete) {
-    if (!complete) return;
+    if (!complete || !favorites.length || !model.rows.length) return;
+
     const present = new Set(model.rows.map((row) => row.id));
     const gone = favorites.filter((id) => !present.has(id));
     if (!gone.length) return;
+    if (gone.length === favorites.length) return;
+
+    const names = await GhaStore.getNames(slug);
+    const entries = {};
+    for (const id of gone) entries[id] = { label: names[id] || id, at: Date.now() };
+    await GhaStore.rememberRemoved(slug, entries);
+
     favorites = await GhaStore.setPins(slug, favorites.filter((id) => present.has(id)));
     await GhaStore.forgetNames(slug, gone);
     render();

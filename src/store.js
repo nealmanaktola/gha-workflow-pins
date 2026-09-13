@@ -6,6 +6,7 @@ function createStore(api) {
   const SETTINGS_KEY = '__settings';
   const COLLAPSED_KEY = '__collapsed';
   const NAME_PREFIX = 'names:';
+  const REMOVED_PREFIX = 'removed:';
   const DEFAULT_SETTINGS = { area: 'sync' };
 
   const keyFor = (slug) => PIN_PREFIX + slug;
@@ -58,6 +59,52 @@ function createStore(api) {
     for (const id of ids) delete next[id];
     await api.storage.local.set({ [NAME_PREFIX + slug]: next });
     return next;
+  }
+
+  // Favorites dropped because their workflow was gone. Kept so a wrong guess
+  // is recoverable: deleting a favorite is not something the user asked for,
+  // so it must never be the end of the story.
+  async function getRemoved(slug) {
+    const key = REMOVED_PREFIX + slug;
+    const got = await api.storage.local.get(key);
+    const value = got[key];
+    return value && typeof value === 'object' ? value : {};
+  }
+
+  async function rememberRemoved(slug, entries) {
+    const next = { ...(await getRemoved(slug)), ...entries };
+    await api.storage.local.set({ [REMOVED_PREFIX + slug]: next });
+    return next;
+  }
+
+  async function dropRemoved(slug, ids) {
+    const next = await getRemoved(slug);
+    for (const id of ids) delete next[id];
+    await api.storage.local.set({ [REMOVED_PREFIX + slug]: next });
+    return next;
+  }
+
+  // Put dropped favorites back where the user had them.
+  async function restoreRemoved(slug, ids) {
+    const removed = await getRemoved(slug);
+    const wanted = ids.filter((id) => removed[id]);
+    if (!wanted.length) return getPins(slug);
+    const names = {};
+    for (const id of wanted) if (removed[id]?.label) names[id] = removed[id].label;
+    if (Object.keys(names).length) await rememberNames(slug, names);
+    const pins = await setPins(slug, [...(await getPins(slug)), ...wanted]);
+    await dropRemoved(slug, wanted);
+    return pins;
+  }
+
+  async function allRemoved() {
+    const everything = await api.storage.local.get(null);
+    const out = {};
+    for (const [key, value] of Object.entries(everything)) {
+      if (!key.startsWith(REMOVED_PREFIX) || !value || !Object.keys(value).length) continue;
+      out[key.slice(REMOVED_PREFIX.length)] = value;
+    }
+    return out;
   }
 
   async function preferredArea() {
@@ -205,6 +252,7 @@ function createStore(api) {
     getSettings, setSettings, switchArea, activeAreaName,
     getCollapsed, setCollapsed,
     getNames, rememberNames, forgetNames,
+    getRemoved, rememberRemoved, dropRemoved, restoreRemoved, allRemoved,
   };
 }
 
