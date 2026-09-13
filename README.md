@@ -12,13 +12,8 @@ A Firefox and Chrome extension. It adds three things to the GitHub Actions sideb
    both the workflow name and its filename.
 
 <p align="center">
-  <img src="docs/screenshot-sidebar.png" alt="The Actions sidebar with a filter box, a My favorites group holding three starred workflows, and an All workflows group below it" width="300">
-  &nbsp;&nbsp;
-  <img src="docs/screenshot-filter.png" alt="The same sidebar filtered by the word build, showing three matches out of twenty-four across both groups" width="320">
+  <img src="docs/screenshot-sidebar.png" alt="The Actions sidebar with a filter box, a My favorites group holding three starred workflows, and an All workflows group below" width="292">
 </p>
-
-<p align="center"><em>Favorites and the filter, on <code>home-assistant/core</code>. The star sits on the
-left, clear of GitHub's own pin badge on the right.</em></p>
 
 GitHub paginates the sidebar and renders only the first page, so a plain filter would search ten
 workflows out of a hundred. On load this extension pulls the remaining pages from the same
@@ -53,6 +48,19 @@ signed `.xpi`.
   `12/87` while filtering, and `87` when not. Each header carries its own match count.
 - While you are filtering, a rolled-up group opens on its own. A search that hides its results
   is not a search.
+
+<table>
+  <tr>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/screenshot-filter.png" alt="The sidebar filtered by the word build, showing three matches out of twenty-four, one under My favorites and two under All workflows" width="300">
+      <br><em>Filtering. The box counts <code>3/24</code>, and each header counts its own matches.</em>
+    </td>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/screenshot-collapsed.png" alt="The sidebar with the All workflows group rolled up, leaving only the three favorites visible" width="300">
+      <br><em>All workflows rolled up, leaving the three favorites.</em>
+    </td>
+  </tr>
+</table>
 - Click the toolbar icon for the current repository's pins.
 - **Manage** in that popup opens the options page: sync on or off, export, import, clear.
 

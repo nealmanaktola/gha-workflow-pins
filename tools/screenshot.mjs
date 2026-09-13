@@ -87,13 +87,24 @@ await page.waitForTimeout(700);
 await report('after starring');
 
 const pane = page.locator('.ghapin-filter-wrap').locator('xpath=..');
-await pane.screenshot({ path: path.join(OUT, 'screenshot-sidebar.png') });
+
+// Clip the tall shot. The whole sidebar runs past 1800px, which reads as an
+// endless scroll in a README and dwarfs every other image on the page.
+const shotOf = async (name, maxHeight) => {
+  const box = await pane.boundingBox();
+  await page.screenshot({
+    path: path.join(OUT, name),
+    clip: { x: box.x, y: box.y, width: box.width, height: Math.min(box.height, maxHeight) },
+  });
+};
+
+await shotOf('screenshot-sidebar.png', 560);
 
 // The filter, mid-search.
 await page.locator('.ghapin-filter').fill('build');
 await page.waitForTimeout(500);
 await report('filtering "build"');
-await pane.screenshot({ path: path.join(OUT, 'screenshot-filter.png') });
+await shotOf('screenshot-filter.png', 560);
 
 await page.locator('.ghapin-filter').fill('');
 await page.waitForTimeout(400);
@@ -104,7 +115,7 @@ if (await allHeader.count()) {
   await allHeader.click();
   await page.waitForTimeout(500);
   await report('all collapsed');
-  await pane.screenshot({ path: path.join(OUT, 'screenshot-collapsed.png') });
+  await shotOf('screenshot-collapsed.png', 560);
 }
 
 console.log('\nconsole errors:', errors.length ? errors : 'none');
