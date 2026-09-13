@@ -1,0 +1,14 @@
+{
+  "name": "gha-workflow-pins",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Firefox and Chrome extension: private per-user pinned workflows and a live filter for the GitHub Actions sidebar.",
+  "scripts": {
+    "test": "node --test 'test/*.test.js'",
+    "icons": "python3 tools/make_icons.py",
+    "package": "bash tools/package.sh",
+    "lint:firefox": "npx --yes web-ext lint --source-dir .",
+    "verify:pagination": "node tools/verify-pagination.mjs"
+  },
+  "license": "MIT"
+}

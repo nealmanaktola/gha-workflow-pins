@@ -1,0 +1,132 @@
+.ghapin-filter-wrap {
+  position: relative;
+  margin: 4px 0 8px;
+}
+
+.ghapin-filter {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 26px 5px 8px;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--fgColor-default, var(--color-fg-default, #1f2328));
+  background: var(--bgColor-default, var(--color-canvas-default, #ffffff));
+  border: 1px solid var(--borderColor-default, var(--color-border-default, #d0d7de));
+  border-radius: 6px;
+}
+
+.ghapin-filter:focus {
+  outline: none;
+  border-color: var(--borderColor-accent-emphasis, var(--color-accent-emphasis, #0969da));
+  box-shadow: 0 0 0 3px var(--borderColor-accent-muted, rgba(9, 105, 218, 0.3));
+}
+
+.ghapin-count {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--fgColor-muted, var(--color-fg-muted, #59636e));
+  pointer-events: none;
+}
+
+.ghapin-row {
+  position: relative;
+}
+
+/* Reserve the leading space on every row, so labels stay aligned and the star
+   never lands on whatever GitHub draws at the trailing edge. */
+.ghapin-row > a,
+.ghapin-row > .ActionListContent {
+  padding-left: 26px !important;
+}
+
+.ghapin-star {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--fgColor-muted, var(--color-fg-muted, #59636e));
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  opacity: 0.25;
+  transition: opacity 0.1s ease-in-out;
+}
+
+.ghapin-row:hover .ghapin-star,
+.ghapin-star:focus-visible,
+.ghapin-star[aria-pressed='true'] {
+  opacity: 1;
+}
+
+.ghapin-star:hover {
+  background: var(--bgColor-neutral-muted, var(--color-neutral-muted, rgba(129, 139, 152, 0.2)));
+}
+
+.ghapin-star[aria-pressed='true'] {
+  color: var(--fgColor-attention, var(--color-attention-fg, #9a6700));
+}
+
+.ghapin-header {
+  margin: 10px 0 2px;
+  list-style: none;
+}
+
+.ghapin-header:first-child {
+  margin-top: 0;
+}
+
+.ghapin-header-toggle {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  padding: 2px 8px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+}
+
+.ghapin-header-toggle:hover {
+  background: var(--bgColor-neutral-muted, var(--color-neutral-muted, rgba(129, 139, 152, 0.2)));
+}
+
+.ghapin-header .ActionList-sectionDivider-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--fgColor-muted, var(--color-fg-muted, #59636e));
+}
+
+.ghapin-chevron {
+  flex: none;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--fgColor-muted, var(--color-fg-muted, #59636e));
+  transition: transform 0.1s ease-in-out;
+}
+
+.ghapin-header--collapsed .ghapin-chevron {
+  transform: rotate(-90deg);
+}
+
+.ghapin-group-count {
+  margin-left: auto;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fgColor-muted, var(--color-fg-muted, #59636e));
+}

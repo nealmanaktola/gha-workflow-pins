@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>GitHub Actions Pins &mdash; Options</title>
+    <link rel="stylesheet" href="pages.css" />
+  </head>
+  <body class="options">
+    <h1>GitHub Actions: Pins &amp; Filter</h1>
+
+    <section>
+      <h2>Where pins are stored</h2>
+      <label class="row">
+        <input type="checkbox" id="sync" />
+        <span>Sync pins across my devices</span>
+      </label>
+      <p class="muted">
+        On: pins travel with your browser profile through Firefox Sync or Chrome Sync. Off: pins
+        stay on this machine. Switching moves the pins you already have.
+      </p>
+      <p class="muted">Active store: <code id="area">…</code></p>
+    </section>
+
+    <section>
+      <h2>Backup</h2>
+      <div class="row">
+        <button type="button" id="export">Export JSON</button>
+        <button type="button" id="import">Import JSON</button>
+        <button type="button" id="clear" class="danger">Clear all pins</button>
+      </div>
+      <input type="file" id="file" accept="application/json,.json" hidden />
+      <p class="muted">Import merges with what you have. It never removes a pin.</p>
+    </section>
+
+    <section>
+      <h2>Your pins</h2>
+      <div id="all"></div>
+    </section>
+
+    <p id="status" class="status" role="status"></p>
+
+    <script src="api.js"></script>
+    <script src="store.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

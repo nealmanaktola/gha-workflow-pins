@@ -1,0 +1,161 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #59636e;
+  --border: #d0d7de;
+  --accent: #0969da;
+  --danger: #cf222e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --fg: #e6edf3;
+    --muted: #9198a1;
+    --border: #30363d;
+    --accent: #4493f8;
+    --danger: #f85149;
+  }
+}
+
+body {
+  margin: 0;
+  font:
+    13px/1.5 -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+a {
+  color: var(--accent);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.popup {
+  width: 320px;
+  padding: 12px;
+}
+
+.popup-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.popup-head strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pin-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.pin-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.pin-list li:last-child {
+  border-bottom: 0;
+}
+
+.pin-list li > :first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-button {
+  flex: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.link-button:hover {
+  color: var(--danger);
+  text-decoration: underline;
+}
+
+.options {
+  max-width: 640px;
+  padding: 24px;
+  margin: 0 auto;
+}
+
+.options h1 {
+  font-size: 18px;
+}
+
+.options h2 {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.options h3 {
+  font-size: 13px;
+  margin: 16px 0 4px;
+}
+
+.options section {
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+button {
+  padding: 5px 12px;
+  color: var(--fg);
+  cursor: pointer;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button.danger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.status {
+  min-height: 20px;
+  font-size: 12px;
+  color: var(--accent);
+}
