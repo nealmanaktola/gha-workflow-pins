@@ -25,6 +25,18 @@ of one per page. Favorites do not wait for any of it: the extension caches each 
 name, draws the favorites group from that cache immediately, and swaps in the real rows when they
 arrive.
 
+### Firefox: grant access to github.com
+
+Firefox treats `host_permissions` as optional. Until you grant it, the extension cannot fetch the
+rest of the workflow list itself, and only the first page GitHub server-renders is searchable.
+
+Open `about:addons`, pick this extension, open **Permissions**, and enable access for
+`github.com`.
+
+Without it nothing breaks: favorites still draw from cache and stay on screen, both headers stay,
+and the extension falls back to clicking GitHub's own "Show more workflows" button, which runs in
+the page and needs no permission from you. It is just slower, one page per click.
+
 ## Your favorites are not deleted by accident
 
 A favorite whose workflow no longer exists is dropped from the sidebar. Dropping one is not

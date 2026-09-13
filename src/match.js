@@ -35,11 +35,15 @@ function groupRows(rows, { favorites = [] } = {}) {
   ];
 }
 
-// Drop empty groups. Then only keep the headers if more than one group
-// survives, because a lone header above a flat list says nothing.
+// Drop empty groups. Headers stay whenever anything is favorited, even if
+// every workflow is, because "My favorites" is the one label that says
+// something. Only a sidebar with no favorites at all goes back to a flat,
+// unlabelled list. Tying this to the number of groups instead made the
+// headers blink out whenever a group happened to empty.
 function visibleGroups(groups) {
   const filled = groups.filter((group) => group.rows.length);
-  return filled.length > 1 ? filled : filled.map((group) => ({ ...group, title: null }));
+  const hasFavorites = filled.some((group) => group.key === 'favorites');
+  return hasFavorites ? filled : filled.map((group) => ({ ...group, title: null }));
 }
 
 if (typeof module !== 'undefined' && module.exports) {

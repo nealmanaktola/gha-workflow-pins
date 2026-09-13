@@ -150,6 +150,31 @@ check('favorites persist across a reload', reloaded.favorites === ids.length, `$
 check('no cached placeholders are left behind', reloaded.cached === 0, `${reloaded.cached}`);
 check('headers survive a reload', reloaded.headers.length === 2, `${reloaded.headers.length}`);
 
+// A failed partial load must not take the favorites, or the headers, with it.
+// This is what Firefox does until the user grants access to github.com.
+const blocked = await context.newPage();
+await blocked.route('**/actions/workflows_partial*', (route) => route.abort());
+await blocked.goto(URL, { waitUntil: 'domcontentloaded' });
+await blocked.waitForSelector('.ghapin-filter', { timeout: 30000 });
+await blocked.waitForTimeout(4000);
+
+const offline = await blocked.evaluate(() => ({
+  favorites: document.querySelectorAll('.ghapin-row[data-ghapin-group="favorites"]').length,
+  headers: document.querySelectorAll('.ghapin-header').length,
+  showMoreVisible: !document.querySelector('[data-target="nav-list-group.showMoreItem"]')?.hidden,
+}));
+check(
+  'favorites survive a failed workflow-list load',
+  offline.favorites === ids.length,
+  `${offline.favorites}/${ids.length}`
+);
+check('headers survive a failed load', offline.headers >= 1, `${offline.headers}`);
+check(
+  'GitHub\'s own Show more stays available after a failed load',
+  offline.showMoreVisible,
+  offline.showMoreVisible ? '' : 'button was hidden with nothing to replace it'
+);
+
 await context.close();
 
 const failed = results.filter((r) => !r.pass);

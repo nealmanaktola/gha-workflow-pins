@@ -71,7 +71,7 @@ test('empty groups do not reach the sidebar', () => {
   assert.deepEqual(visible.map((g) => g.key), ['all']);
 });
 
-test('a single surviving group loses its header, because it labels nothing', () => {
+test('with nothing favorited the list is flat and unlabelled', () => {
   const visible = visibleGroups(groupRows(rowsFor('a.yaml', 'b.yaml')));
   assert.equal(visible.length, 1);
   assert.equal(visible[0].title, null);
@@ -82,8 +82,15 @@ test('both groups keep their headers once something is favorited', () => {
   assert.deepEqual(visible.map((g) => g.title), [GROUP_TITLES.favorites, GROUP_TITLES.all]);
 });
 
-test('favoriting every workflow leaves one unlabelled group', () => {
+test('favoriting every workflow keeps the favorites header', () => {
+  const visible = visibleGroups(groupRows(rowsFor('a.yaml'), { favorites: ['a.yaml'] }));
+  assert.deepEqual(visible.map((g) => g.title), [GROUP_TITLES.favorites]);
+});
+
+test('the header stays while only the favorite has loaded', () => {
+  // What a failed workflow-list load looks like: the cached favorite is all
+  // that is on screen. The header must not vanish.
   const visible = visibleGroups(groupRows(rowsFor('a.yaml'), { favorites: ['a.yaml'] }));
   assert.equal(visible.length, 1);
-  assert.equal(visible[0].title, null);
+  assert.equal(visible[0].title, GROUP_TITLES.favorites);
 });

@@ -90,6 +90,28 @@
     }
   }
 
+  // Fallback for when the extension cannot fetch the partial itself, which
+  // happens in Firefox until the user grants access to github.com. Clicking
+  // GitHub's own button makes the page do the request. The mutation observer
+  // picks up the rows it adds.
+  function clickThroughShowMore(more) {
+    const button = more.querySelector('button') || more;
+    if (typeof button.click !== 'function') return false;
+    let clicks = 0;
+    const timer = setInterval(() => {
+      clicks += 1;
+      const live = document.querySelector(SHOW_MORE);
+      const target = live?.querySelector('button') || live;
+      if (!target || clicks > MAX_PAGES || live.hidden) {
+        clearInterval(timer);
+        return;
+      }
+      target.click();
+    }, 400);
+    button.click();
+    return true;
+  }
+
   // GitHub paginates the sidebar and only renders the first page. Pull the rest
   // from the same partial endpoint its "Show more" button uses, so the filter
   // searches every workflow and favorites outside the first page still appear.
@@ -129,11 +151,28 @@
       next += 1;
     }
 
-    for (const cached of container.querySelectorAll(`[${CACHED_ATTR}]`)) cached.remove();
+    const items = batches.filter(Boolean).flat();
+
+    // Nothing came back. Let GitHub fetch its own pages instead: its button
+    // runs in the page, so it needs no permission the extension might lack.
+    if (!items.length && failed) {
+      loadedAll = true;
+      return clickThroughShowMore(more) ? 0 : null;
+    }
+
+    // Drop a cached favorite only once its real row is in hand. Clearing them
+    // first meant a failed load emptied the favorites group, which took both
+    // group headers with it.
+    const incoming = new Set(items.map((item) => workflowId(workflowAnchors(item)[0])));
+    for (const cached of container.querySelectorAll(`[${CACHED_ATTR}]`)) {
+      const anchor = workflowAnchors(cached)[0];
+      if (anchor && incoming.has(workflowId(anchor))) cached.remove();
+    }
+
     const seen = new Set(workflowAnchors(container).map(workflowId));
     const fragment = document.createDocumentFragment();
     let added = 0;
-    for (const item of batches.filter(Boolean).flat()) {
+    for (const item of items) {
       const id = workflowId(workflowAnchors(item)[0]);
       if (seen.has(id)) continue;
       seen.add(id);
@@ -143,8 +182,12 @@
     container.append(fragment);
 
     loadedAll = true;
-    more.setAttribute('hidden', 'hidden');
-    more.style.display = 'none';
+    // Leave the button in place when the load failed, so the user still has
+    // GitHub's own way to see the rest of the list.
+    if (!failed) {
+      more.setAttribute('hidden', 'hidden');
+      more.style.display = 'none';
+    }
     return failed ? null : added;
   }
 
