@@ -11,6 +11,15 @@ A Firefox and Chrome extension. It adds three things to the GitHub Actions sideb
 3. **A live filter over every workflow.** Type to narrow the list. Terms match in any order, against
    both the workflow name and its filename.
 
+<p align="center">
+  <img src="docs/screenshot-sidebar.png" alt="The Actions sidebar with a filter box, a My favorites group holding three starred workflows, and an All workflows group below it" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/screenshot-filter.png" alt="The same sidebar filtered by the word build, showing three matches out of twenty-four across both groups" width="320">
+</p>
+
+<p align="center"><em>Favorites and the filter, on <code>home-assistant/core</code>. The star sits on the
+left, clear of GitHub's own pin badge on the right.</em></p>
+
 GitHub paginates the sidebar and renders only the first page, so a plain filter would search ten
 workflows out of a hundred. On load this extension pulls the remaining pages from the same
 `/{owner}/{repo}/actions/workflows_partial` endpoint that GitHub's own "Show more workflows" button
@@ -66,8 +75,13 @@ Pins are keyed by `owner/repo` and store the workflow filename, for example
 - `https://github.com/*` — so the content script can read the remaining pages of the workflow list
   from GitHub's own partial endpoint.
 
-There is no background script. The extension talks to nothing but github.com, sends nothing
-anywhere, and the content script only runs on `https://github.com/*/*/actions*`.
+There is no background script. The extension talks to nothing but github.com and sends nothing
+anywhere.
+
+The content script matches all of `https://github.com/*` rather than the Actions URL alone. GitHub
+navigates with Turbo, so a narrower match never injects when you reach Actions by clicking the tab
+from another page: the document never reloads. On every page that is not an Actions sidebar the
+script returns immediately and touches nothing.
 
 ## Develop
 
@@ -76,7 +90,18 @@ npm test              # unit tests, no dependencies, uses node:test
 npm run icons         # redraw icons/*.png with the standard library
 npm run package       # build dist/*.zip for both stores
 npm run lint:firefox  # web-ext lint, downloads web-ext on demand
+npm run verify:pagination   # walk the live partial endpoint, page by page
+npm run screenshot          # drive a real browser, retake docs/*.png
 ```
+
+`npm run screenshot` needs Playwright's own Chromium:
+
+```bash
+npm i -D playwright && npx playwright install chromium
+```
+
+Use that build, not the installed Google Chrome. Chrome 137 and later ignore `--load-extension`,
+so an extension never loads there and every check silently reports nothing.
 
 ### Layout
 

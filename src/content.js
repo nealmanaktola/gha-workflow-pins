@@ -22,6 +22,11 @@
     return m ? `${m[1]}/${m[2]}` : null;
   };
 
+  // The script is injected across github.com, because GitHub navigates with
+  // Turbo and a narrower match would never inject when the user arrives at
+  // Actions from another page. Everywhere else it does nothing.
+  const onActionsPage = () => /^\/[^/]+\/[^/]+\/actions(?:\/|$)/.test(location.pathname);
+
   // The path after /actions/workflows/ identifies the workflow. It is usually
   // a filename, but Copilot and Dependabot entries add a path segment.
   const workflowId = (anchor) => {
@@ -263,7 +268,7 @@
 
   function render() {
     if (rendering) return;
-    if (!repoSlug()) return;
+    if (!repoSlug() || !onActionsPage()) return;
 
     rendering = true;
     observer?.disconnect();
@@ -318,7 +323,7 @@
 
   async function boot() {
     const slug = repoSlug();
-    if (!slug) return;
+    if (!slug || !onActionsPage()) return;
 
     loadedAll = false;
     [favorites, collapsed] = await Promise.all([GhaStore.getPins(slug), GhaStore.getCollapsed()]);
@@ -339,15 +344,31 @@
 
   GhaApi.storage.onChanged.addListener(async () => {
     const slug = repoSlug();
-    if (!slug) return;
+    if (!slug || !onActionsPage()) return;
     const next = await GhaStore.getPins(slug);
     if (next.join(' ') === favorites.join(' ')) return;
     favorites = next;
     render();
   });
 
-  document.addEventListener('turbo:load', boot);
-  document.addEventListener('turbo:render', schedule);
-  document.addEventListener('pjax:end', boot);
+  let lastUrl = location.href;
+  function onNavigated() {
+    if (location.href === lastUrl) return;
+    lastUrl = location.href;
+    boot();
+  }
+
+  // Framework events first, because they fire immediately. The interval is the
+  // backstop: GitHub renames these events from time to time, and a missed
+  // event would otherwise leave the sidebar bare until a full reload.
+  for (const event of ['turbo:load', 'turbo:render', 'turbo:frame-load', 'pjax:end', 'soft-nav:end']) {
+    document.addEventListener(event, onNavigated);
+  }
+  window.addEventListener('popstate', onNavigated);
+  setInterval(onNavigated, 500);
+
+  // Watch from the start, not only after a render succeeds, so arriving on a
+  // slow page still gets picked up once the sidebar appears.
+  connect();
   boot();
 })();
