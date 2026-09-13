@@ -20,6 +20,12 @@ workflows out of a hundred. On load this extension pulls the remaining pages fro
 `/{owner}/{repo}/actions/workflows_partial` endpoint that GitHub's own "Show more workflows" button
 uses, then hides that button. The filter therefore searches everything.
 
+Every page is fetched at once rather than one after another, so the cost is one round trip instead
+of one per page. Favorites do not wait for any of it: the extension caches each workflow's display
+name, draws the favorites group from that cache immediately, and swaps in the real rows when they
+arrive. A favorite whose workflow has actually been deleted is dropped, but only after a clean
+load, because a failed request also looks like a short list and must never delete your favorites.
+
 ## Install for development
 
 ### Firefox

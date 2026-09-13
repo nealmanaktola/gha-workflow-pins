@@ -5,6 +5,7 @@ function createStore(api) {
   const PIN_PREFIX = 'pins:';
   const SETTINGS_KEY = '__settings';
   const COLLAPSED_KEY = '__collapsed';
+  const NAME_PREFIX = 'names:';
   const DEFAULT_SETTINGS = { area: 'sync' };
 
   const keyFor = (slug) => PIN_PREFIX + slug;
@@ -33,6 +34,29 @@ function createStore(api) {
   async function setCollapsed(key, collapsed) {
     const next = { ...(await getCollapsed()), [key]: Boolean(collapsed) };
     await api.storage.local.set({ [COLLAPSED_KEY]: next });
+    return next;
+  }
+
+  // Display names for workflows we have already seen, so the favorites group
+  // can be drawn from cache before the workflow list arrives over the network.
+  // This is a cache, so it stays local and is never exported.
+  async function getNames(slug) {
+    const key = NAME_PREFIX + slug;
+    const got = await api.storage.local.get(key);
+    const value = got[key];
+    return value && typeof value === 'object' ? value : {};
+  }
+
+  async function rememberNames(slug, names) {
+    const next = { ...(await getNames(slug)), ...names };
+    await api.storage.local.set({ [NAME_PREFIX + slug]: next });
+    return next;
+  }
+
+  async function forgetNames(slug, ids) {
+    const next = await getNames(slug);
+    for (const id of ids) delete next[id];
+    await api.storage.local.set({ [NAME_PREFIX + slug]: next });
     return next;
   }
 
@@ -180,6 +204,7 @@ function createStore(api) {
     exportAll, importAll, clearAll,
     getSettings, setSettings, switchArea, activeAreaName,
     getCollapsed, setCollapsed,
+    getNames, rememberNames, forgetNames,
   };
 }
 

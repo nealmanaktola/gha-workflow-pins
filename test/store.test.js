@@ -183,3 +183,57 @@ test('clearing pins leaves the collapsed groups alone', async () => {
   await store.clearAll();
   assert.deepEqual(await store.getCollapsed(), { all: true });
 });
+
+test('an unseen repo has no cached names', async () => {
+  const store = createStore(new FakeApi());
+  assert.deepEqual(await store.getNames('acme/widgets'), {});
+});
+
+test('remembering names merges rather than replaces', async () => {
+  const store = createStore(new FakeApi());
+  await store.rememberNames('acme/widgets', { 'ci.yaml': 'CI' });
+  await store.rememberNames('acme/widgets', { 'e2e.yaml': 'E2E tests' });
+  assert.deepEqual(await store.getNames('acme/widgets'), { 'ci.yaml': 'CI', 'e2e.yaml': 'E2E tests' });
+});
+
+test('a renamed workflow overwrites its cached name', async () => {
+  const store = createStore(new FakeApi());
+  await store.rememberNames('acme/widgets', { 'ci.yaml': 'CI' });
+  await store.rememberNames('acme/widgets', { 'ci.yaml': 'Continuous Integration' });
+  assert.deepEqual(await store.getNames('acme/widgets'), { 'ci.yaml': 'Continuous Integration' });
+});
+
+test('forgetting names drops only the ones named', async () => {
+  const store = createStore(new FakeApi());
+  await store.rememberNames('acme/widgets', { 'ci.yaml': 'CI', 'e2e.yaml': 'E2E', 'old.yaml': 'Old' });
+  await store.forgetNames('acme/widgets', ['old.yaml']);
+  assert.deepEqual(await store.getNames('acme/widgets'), { 'ci.yaml': 'CI', 'e2e.yaml': 'E2E' });
+});
+
+test('names are cached per repo', async () => {
+  const store = createStore(new FakeApi());
+  await store.rememberNames('acme/widgets', { 'ci.yaml': 'CI' });
+  assert.deepEqual(await store.getNames('acme/gadgets'), {});
+});
+
+test('the name cache stays local and out of the export', async () => {
+  const api = new FakeApi();
+  const store = createStore(api);
+  await store.rememberNames('acme/widgets', { 'ci.yaml': 'CI' });
+  await store.setPins('acme/widgets', ['ci.yaml']);
+
+  assert.equal(api.storage.sync.data.has('names:acme/widgets'), false);
+  assert.deepEqual(await store.exportAll(), {
+    version: 1,
+    settings: { area: 'sync' },
+    pins: { 'acme/widgets': ['ci.yaml'] },
+  });
+});
+
+test('clearing pins leaves the name cache alone', async () => {
+  const store = createStore(new FakeApi());
+  await store.rememberNames('acme/widgets', { 'ci.yaml': 'CI' });
+  await store.setPins('acme/widgets', ['ci.yaml']);
+  await store.clearAll();
+  assert.deepEqual(await store.getNames('acme/widgets'), { 'ci.yaml': 'CI' });
+});

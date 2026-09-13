@@ -6,6 +6,7 @@
   const WRAP_CLASS = 'ghapin-filter-wrap';
   const HEADER_CLASS = 'ghapin-header';
   const GROUP_ATTR = 'data-ghapin-group';
+  const CACHED_ATTR = 'data-ghapin-cached';
   const WORKFLOW_PATH = /^\/[^/]+\/[^/]+\/actions\/workflows\/.+$/;
   const SHOW_MORE = '[data-target="nav-list-group.showMoreItem"]';
   const MAX_PAGES = 30;
@@ -16,6 +17,7 @@
   let loadedAll = false;
   let favorites = [];
   let collapsed = {};
+  let signature = '';
 
   const repoSlug = () => {
     const m = location.pathname.match(/^\/([^/]+)\/([^/]+)(?:\/|$)/);
@@ -71,9 +73,30 @@
     return { container, rows };
   }
 
-  // GitHub paginates the sidebar and only renders the first page. Pull the
-  // remaining pages from the same partial endpoint its "Show more" button
-  // uses, so the filter searches every workflow instead of the first ten.
+  async function fetchPage(src, page) {
+    const url = new URL(src, location.origin);
+    url.searchParams.set('page', String(page));
+    try {
+      const response = await fetch(url.toString(), {
+        credentials: 'same-origin',
+        headers: { Accept: 'text/html' },
+      });
+      if (!response.ok) return null;
+      const doc = new DOMParser().parseFromString(`<ul>${await response.text()}</ul>`, 'text/html');
+      for (const node of doc.querySelectorAll('script, style, link')) node.remove();
+      return [...doc.querySelectorAll('li')].filter((li) => workflowAnchors(li).length);
+    } catch {
+      return null;
+    }
+  }
+
+  // GitHub paginates the sidebar and only renders the first page. Pull the rest
+  // from the same partial endpoint its "Show more" button uses, so the filter
+  // searches every workflow and favorites outside the first page still appear.
+  //
+  // Every page GitHub declares is fetched at once. Doing this one page at a
+  // time cost a round trip per page, which is what made favorites take seconds
+  // to fill in on a large repository.
   async function loadAllWorkflows(container) {
     const more = document.querySelector(SHOW_MORE);
     const src = more?.getAttribute('src');
@@ -82,47 +105,83 @@
       return 0;
     }
 
-    const seen = new Set(workflowAnchors(container).map(workflowId));
-    let page = Number(more.getAttribute('data-current-page') || '1');
-    let added = 0;
 
-    for (let step = 0; step < MAX_PAGES; step += 1) {
-      page += 1;
-      const url = new URL(src, location.origin);
-      url.searchParams.set('page', String(page));
+    const current = Number(more.getAttribute('data-current-page') || '1');
+    const declared = Number(more.getAttribute('data-total-pages') || '0');
 
-      let doc;
-      try {
-        const response = await fetch(url.toString(), {
-          credentials: 'same-origin',
-          headers: { Accept: 'text/html' },
-        });
-        if (!response.ok) break;
-        doc = new DOMParser().parseFromString(`<ul>${await response.text()}</ul>`, 'text/html');
-      } catch {
+    // One page past the declared end confirms the end in the same round trip.
+    const first = [];
+    for (let page = current + 1; page <= Math.max(declared, current) + 1; page += 1) first.push(page);
+    const batches = await Promise.all(first.map((page) => fetchPage(src, page)));
+    let failed = batches.some((batch) => batch === null);
+
+    // data-total-pages can undercount. Walk on while pages keep coming back
+    // full, because an empty page is the only dependable end marker.
+    let next = first[first.length - 1] + 1;
+    for (let step = 0; step < MAX_PAGES && batches[batches.length - 1]?.length; step += 1) {
+      const page = await fetchPage(src, next);
+      if (page === null) {
+        failed = true;
         break;
       }
-
-      for (const node of doc.querySelectorAll('script, style, link')) node.remove();
-      const items = [...doc.querySelectorAll('li')].filter((li) => workflowAnchors(li).length);
-      // An empty page is the only dependable end marker. A partial can carry a
-      // full page of workflows and still omit the show-more element, so that
-      // element says nothing about whether another page follows.
-      if (!items.length) break;
-
-      for (const item of items) {
-        const id = workflowId(workflowAnchors(item)[0]);
-        if (seen.has(id)) continue;
-        seen.add(id);
-        container.append(document.importNode(item, true));
-        added += 1;
-      }
+      if (!page.length) break;
+      batches.push(page);
+      next += 1;
     }
+
+    for (const cached of container.querySelectorAll(`[${CACHED_ATTR}]`)) cached.remove();
+    const seen = new Set(workflowAnchors(container).map(workflowId));
+    const fragment = document.createDocumentFragment();
+    let added = 0;
+    for (const item of batches.filter(Boolean).flat()) {
+      const id = workflowId(workflowAnchors(item)[0]);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      fragment.append(document.importNode(item, true));
+      added += 1;
+    }
+    container.append(fragment);
 
     loadedAll = true;
     more.setAttribute('hidden', 'hidden');
     more.style.display = 'none';
-    return added;
+    return failed ? null : added;
+  }
+
+  // A favorite drawn from cache, before the real list arrives. It carries the
+  // same markup and a real href, so it looks and behaves like GitHub's own row.
+  function buildCachedRow(slug, id, label) {
+    const li = document.createElement('li');
+    li.className = 'actions-workflow-list-item ActionListItem';
+    li.setAttribute(CACHED_ATTR, '1');
+
+    const link = document.createElement('a');
+    link.className = 'ActionListContent';
+    link.href = `/${slug}/actions/workflows/${id.split('/').map(encodeURIComponent).join('/')}`;
+
+    const text = document.createElement('span');
+    text.className = 'ActionListItem-label ActionListItem-label--truncate';
+    text.textContent = label;
+
+    link.append(text);
+    li.append(link);
+    return li;
+  }
+
+  // Favorites the sidebar has not rendered yet. GitHub only sends the first
+  // page, so without this a favorite further down the list cannot appear until
+  // every page has arrived.
+  function paintCachedFavorites(container, slug, names) {
+    const present = new Set(workflowAnchors(container).map(workflowId));
+    const fragment = document.createDocumentFragment();
+    let painted = 0;
+    for (const id of favorites) {
+      if (present.has(id) || !names[id]) continue;
+      fragment.append(buildCachedRow(slug, id, names[id]));
+      painted += 1;
+    }
+    if (painted) container.append(fragment);
+    return painted;
   }
 
   function buildStar(row, pinned, onToggle) {
@@ -278,19 +337,25 @@
       const model = findList();
       if (!model) return;
 
+      const next = `${favorites.join(',')}|${model.rows.map((row) => row.id).join(',')}`;
+      if (next === signature && document.querySelector(`.${WRAP_CLASS}`)) return;
+
       for (const row of model.rows) decorate(row, row.el, onToggle);
 
       const groups = visibleGroups(groupRows(model.rows, { favorites }));
+      const fragment = document.createDocumentFragment();
       for (const group of groups) {
-        if (group.title) model.container.append(buildHeader(group, onToggleCollapse));
+        if (group.title) fragment.append(buildHeader(group, onToggleCollapse));
         for (const row of group.rows) {
           row.el.setAttribute(GROUP_ATTR, group.key);
-          model.container.append(row.el);
+          fragment.append(row.el);
         }
       }
+      model.container.append(fragment);
 
       const wrap = document.querySelector(`.${WRAP_CLASS}`) || buildFilter(model);
       applyFilter(wrap.querySelector('.ghapin-filter').value);
+      signature = `${favorites.join(',')}|${findList().rows.map((row) => row.id).join(',')}`;
     } finally {
       rendering = false;
       connect();
@@ -318,7 +383,33 @@
       );
       if (external) schedule();
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    const list = findList()?.container;
+    const scope = list?.parentElement || document.body;
+    observer.observe(scope, { childList: true, subtree: true });
+  }
+
+  // Remember what each workflow is called, so the next visit can draw the
+  // favorites group before the network answers.
+  async function cacheNames(slug, model) {
+    const names = {};
+    for (const row of model.rows) {
+      if (row.el.hasAttribute(CACHED_ATTR) || !row.label) continue;
+      names[row.id] = row.label;
+    }
+    if (Object.keys(names).length) await GhaStore.rememberNames(slug, names);
+  }
+
+  // Once the full list is in, a favorite that is still missing no longer
+  // exists. Drop it, but only after a clean load: a failed fetch looks like a
+  // short list, and that must never delete someone's favorites.
+  async function reconcileFavorites(slug, model, complete) {
+    if (!complete) return;
+    const present = new Set(model.rows.map((row) => row.id));
+    const gone = favorites.filter((id) => !present.has(id));
+    if (!gone.length) return;
+    favorites = await GhaStore.setPins(slug, favorites.filter((id) => present.has(id)));
+    await GhaStore.forgetNames(slug, gone);
+    render();
   }
 
   async function boot() {
@@ -326,7 +417,17 @@
     if (!slug || !onActionsPage()) return;
 
     loadedAll = false;
-    [favorites, collapsed] = await Promise.all([GhaStore.getPins(slug), GhaStore.getCollapsed()]);
+    signature = '';
+    const [pins, collapsedState, names] = await Promise.all([
+      GhaStore.getPins(slug),
+      GhaStore.getCollapsed(),
+      GhaStore.getNames(slug),
+    ]);
+    favorites = pins;
+    collapsed = collapsedState;
+
+    const early = findList();
+    if (early) paintCachedFavorites(early.container, slug, names);
     render();
 
     const model = findList();
@@ -334,12 +435,18 @@
 
     // One load per page view, shared by every caller that arrives meanwhile.
     loading = loading || loadAllWorkflows(model.container);
+    let complete = false;
     try {
-      await loading;
+      complete = (await loading) !== null;
     } finally {
       loading = null;
     }
     render();
+
+    const loaded = findList();
+    if (!loaded) return;
+    await cacheNames(slug, loaded);
+    await reconcileFavorites(slug, loaded, complete);
   }
 
   GhaApi.storage.onChanged.addListener(async () => {
