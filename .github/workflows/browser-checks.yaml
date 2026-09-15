@@ -1,0 +1,33 @@
+name: Browser checks
+
+# The sidebar checks drive a real browser against live github.com, so they are
+# too slow and too dependent on the network to gate every push. They run nightly
+# instead, which is what catches a GitHub markup change before a user does.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  sidebar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install Playwright Chromium
+        # Must be Playwright's own build. Chrome 137+ ignores --load-extension,
+        # so a system Chrome loads no extension and every check passes on an
+        # empty page.
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Sidebar checks
+        run: xvfb-run --auto-servernum node tools/verify-sidebar.mjs
+
+      - name: Pagination walk
+        run: node tools/verify-pagination.mjs

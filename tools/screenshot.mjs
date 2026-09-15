@@ -118,6 +118,47 @@ if (await allHeader.count()) {
   await shotOf('screenshot-collapsed.png', 560);
 }
 
+// Store assets. Chrome requires a 1280x800 screenshot and a 440x280 small
+// promo tile, at exactly those sizes. The README images are a different shape,
+// so both are produced from the same session.
+const STORE = path.resolve(OUT, '../store');
+fs.mkdirSync(STORE, { recursive: true });
+
+await page.locator('.ghapin-filter').fill('');
+await page.waitForTimeout(400);
+const expand = page.locator('.ghapin-header[data-ghapin-group="all"] .ghapin-header-toggle');
+if (await expand.count()) {
+  const rolled = await expand.getAttribute('aria-expanded');
+  if (rolled === 'false') await expand.click();
+  await page.waitForTimeout(400);
+}
+
+await page.setViewportSize({ width: 1280, height: 800 });
+await page.waitForTimeout(600);
+await page.screenshot({ path: path.join(STORE, 'screenshot-1280x800.png'), scale: 'css' });
+
+// The promo tile crops to the favorites and the first few rows. The whole
+// sidebar scaled down to tile height is unreadable.
+const tile = await context.newPage();
+const box = await pane.boundingBox();
+const tileShot = await page.screenshot({
+  clip: { x: box.x, y: box.y, width: box.width, height: Math.min(box.height, 300) },
+  scale: 'css',
+});
+await tile.setViewportSize({ width: 440, height: 280 });
+await tile.setContent(`<style>
+  html,body{margin:0;height:100%;background:#0d1117;display:flex;align-items:center;gap:18px;
+    font:600 20px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e6edf3;padding:0 22px;box-sizing:border-box}
+  img{width:196px;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+  span{color:#9198a1;font-weight:400;font-size:14px;display:block;margin-top:6px}
+</style>
+<img src="data:image/png;base64,${tileShot.toString('base64')}">
+<div>Favorites &amp; filter<span>for the GitHub Actions sidebar</span></div>`);
+await tile.waitForTimeout(500);
+await tile.screenshot({ path: path.join(STORE, 'promo-440x280.png'), scale: 'css' });
+await tile.close();
+console.log('store assets:', fs.readdirSync(STORE).join(', '), `(pane was ${Math.round(box.width)}px wide)`);
+
 console.log('\nconsole errors:', errors.length ? errors : 'none');
 console.log('wrote:', fs.readdirSync(OUT).join(', '));
 await context.close();

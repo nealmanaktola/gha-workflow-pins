@@ -27,13 +27,13 @@ arrive.
 
 ### Firefox: grant access to github.com
 
-Firefox treats `host_permissions` as optional. Until you grant it, the extension cannot fetch the
-rest of the workflow list itself, and only the first page GitHub server-renders is searchable.
+Access to github.com is an optional permission, and Firefox does not grant it at install. Until you
+do, the extension cannot fetch the rest of the workflow list itself.
 
-Open `about:addons`, pick this extension, open **Permissions**, and enable access for
-`github.com`.
+Open the options page and press **Grant access to github.com**. The section disappears once it is
+granted. `about:addons` → this extension → **Permissions** works too.
 
-Without it nothing breaks: favorites still draw from cache and stay on screen, both headers stay,
+Without it nothing breaks: favorites still draw from cache and stay on screen, the headers stay,
 and the extension falls back to clicking GitHub's own "Show more workflows" button, which runs in
 the page and needs no permission from you. It is just slower, one page per click.
 
@@ -135,6 +135,19 @@ navigates with Turbo, so a narrower match never injects when you reach Actions b
 from another page: the document never reloads. On every page that is not an Actions sidebar the
 script returns immediately and touches nothing.
 
+## Publishing
+
+`STORE-LISTING.md` holds the listing copy, the permission justifications, the data disclosures and
+a submission checklist. `PRIVACY.md` is the privacy policy; both stores need it at a public URL.
+`store/` holds the assets at the exact sizes Chrome requires.
+
+Two things to settle before the first public build:
+
+1. **The name.** `GitHub Actions: Pins & Filter` leads with someone else's trademark and reads like
+   a GitHub product. See `STORE-LISTING.md`.
+2. **`browser_specific_settings.gecko.id`.** Storage is keyed to it. Change it after release and
+   every user's favorites vanish.
+
 ## Develop
 
 ```bash
@@ -143,9 +156,12 @@ npm run icons         # redraw icons/*.png with the standard library
 npm run package       # build dist/*.zip for both stores
 npm run lint:firefox  # web-ext lint, downloads web-ext on demand
 npm run verify:pagination   # walk the live partial endpoint, page by page
-npm run verify:sidebar      # 13 DOM checks in a real browser, exits non-zero on failure
-npm run screenshot          # drive a real browser, retake docs/*.png
+npm run verify:sidebar      # 22 DOM checks in a real browser, exits non-zero on failure
+npm run screenshot          # retake docs/ and store/ images from a real browser
 ```
+
+Unit tests and lint run on every push. The browser checks run nightly, because they drive a real
+browser against live github.com. See `CONTRIBUTING.md` before writing one.
 
 `npm run screenshot` needs Playwright's own Chromium:
 

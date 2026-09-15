@@ -8,6 +8,19 @@
   <body class="options">
     <h1>GitHub Actions: Pins &amp; Filter</h1>
 
+    <section id="access-section" hidden>
+      <h2>Faster loading</h2>
+      <p class="muted">
+        GitHub sends only the first page of the workflow list. With access to github.com the
+        extension fetches the rest in one go. Without it, it falls back to clicking GitHub's own
+        "Show more workflows" button, one page at a time. Your favorites work either way.
+      </p>
+      <div class="row">
+        <button type="button" id="grant">Grant access to github.com</button>
+        <span class="muted" id="access-state"></span>
+      </div>
+    </section>
+
     <section>
       <h2>Where pins are stored</h2>
       <label class="row">

@@ -107,12 +107,39 @@ async function renderRemoved() {
   for (const slug of slugs) container.append(removedBlock(slug, removed[slug], refresh));
 }
 
+// Firefox treats host permissions as optional, so the extension cannot fetch
+// the workflow list until the user grants access. A published extension cannot
+// rely on anyone reading a README, so it has to be askable from here.
+const GITHUB_ORIGIN = 'https://github.com/*';
+
+async function renderAccess() {
+  const section = $('access-section');
+  if (!GhaApi.permissions?.contains) {
+    section.hidden = true;
+    return;
+  }
+  const granted = await GhaApi.permissions.contains({ origins: [GITHUB_ORIGIN] }).catch(() => true);
+  section.hidden = granted;
+  $('access-state').textContent = granted ? 'Granted.' : 'Not granted yet.';
+}
+
+$('grant').addEventListener('click', async () => {
+  try {
+    const granted = await GhaApi.permissions.request({ origins: [GITHUB_ORIGIN] });
+    say(granted ? 'Granted. Reload any open GitHub tab.' : 'Not granted. The fallback still works.');
+  } catch (error) {
+    say(`Could not ask for access: ${error.message}`);
+  }
+  await renderAccess();
+});
+
 async function refresh() {
   const settings = await GhaStore.getSettings();
   $('sync').checked = settings.area === 'sync';
   $('area').textContent = await GhaStore.activeAreaName();
   await renderPins();
   await renderRemoved();
+  await renderAccess();
 }
 
 $('sync').addEventListener('change', async (event) => {

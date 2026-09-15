@@ -12,5 +12,7 @@
     "screenshot": "node tools/screenshot.mjs",
     "verify:sidebar": "node tools/verify-sidebar.mjs"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://github.com/nealmanaktola/gha-workflow-pins",
+  "author": "Neal Manaktola"
 }

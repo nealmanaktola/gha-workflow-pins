@@ -88,5 +88,5 @@ def write_png(path: pathlib.Path, size: int) -> None:
 if __name__ == "__main__":
     icons = pathlib.Path(__file__).resolve().parent.parent / "icons"
     icons.mkdir(exist_ok=True)
-    for dimension in (48, 128):
+    for dimension in (16, 32, 48, 128):
         write_png(icons / f"icon-{dimension}.png", dimension)
