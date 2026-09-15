@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Shortlist for GitHub Actions",
   "version": "1.0.0",
-  "description": "Private per-user pinned workflows and a live filter for the GitHub Actions sidebar. No pin limit, no write access needed.",
+  "description": "Favorite the workflows you actually use, and filter the whole list. Private to you, no five-pin limit, no repo access.",
   "permissions": [
     "storage",
     "activeTab"
