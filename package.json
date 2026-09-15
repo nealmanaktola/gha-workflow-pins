@@ -10,7 +10,8 @@
     "lint:firefox": "npx --yes web-ext lint --source-dir .",
     "verify:pagination": "node tools/verify-pagination.mjs",
     "screenshot": "node tools/screenshot.mjs",
-    "verify:sidebar": "node tools/verify-sidebar.mjs"
+    "verify:sidebar": "node tools/verify-sidebar.mjs",
+    "submit:firefox": "bash tools/submit-firefox.sh"
   },
   "license": "MIT",
   "homepage": "https://github.com/nealmanaktola/shortlist-gha",

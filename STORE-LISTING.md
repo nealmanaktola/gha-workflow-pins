@@ -90,6 +90,52 @@ Privacy policy URL: the raw or Pages link to `PRIVACY.md` in this repository.
 
 Regenerate with `npm run screenshot`. A 1400×560 marquee tile is optional and not yet made.
 
+## Firefox (AMO) submission
+
+The first submission of a new add-on goes through the web form, because listing text, screenshots
+and categories cannot be set through the API. Every version after that can use
+`npm run submit:firefox`.
+
+1. Run the manual Firefox pass in `CONTRIBUTING.md`. Nothing automated covers Firefox.
+2. `npm run package` — produces `dist/shortlist-gha-<version>.zip`.
+3. Go to https://addons.mozilla.org/developers/addon/submit/ and choose **On this site**.
+4. Upload the zip. It should validate with no errors.
+5. Fill the listing from the fields below.
+6. Submit. Review usually takes a few days; AMO emails the outcome.
+
+### AMO listing fields
+
+| Field | Value |
+| ----- | ----- |
+| Name | Shortlist for GitHub Actions |
+| Add-on URL slug | `shortlist-for-github-actions` |
+| Summary | The short description above, 250 characters max on AMO |
+| Description | The detailed description above |
+| Categories | Other (AMO has no Developer Tools category for extensions) |
+| Tags | github, actions, workflow, ci, productivity |
+| Support email | your contact address |
+| Support site | https://github.com/nealmanaktola/shortlist-gha/issues |
+| Homepage | https://github.com/nealmanaktola/shortlist-gha |
+| Licence | MIT |
+| Privacy policy | Paste the text of `PRIVACY.md` |
+| Screenshots | `store/screenshot-1280x800.png`, plus `docs/screenshot-filter.png` and `docs/screenshot-collapsed.png` |
+
+AMO asks whether the add-on needs its source code submitted. Answer **no**: nothing here is
+minified, obfuscated or generated, so the uploaded package is already the readable source.
+
+### Credentials, for later versions
+
+Get an API key and secret from https://addons.mozilla.org/developers/addon/api/key/ , then keep
+them in the environment rather than in a file or in shell history:
+
+```bash
+export AMO_API_KEY='user:12345678:123'
+export AMO_API_SECRET='...'
+npm run submit:firefox
+```
+
+Treat that secret like a password. It can publish under your name.
+
 ## Submission checklist
 
 - [x] Name decided and applied in `manifest.json`, `package.json` and here
