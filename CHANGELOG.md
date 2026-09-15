@@ -35,6 +35,8 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Changed
 
+- Renamed to **Shortlist for GitHub Actions**. The previous name led with someone else's trademark
+  and read like a GitHub product. The Firefox extension id changed with it and is now final.
 - `https://github.com/*` moved from a required host permission to an optional one. It is not needed
   in Chrome, and Firefox treats it as optional regardless.
 - Favorites are mirrored to local storage as well as sync, so a sync area that accepts a write and

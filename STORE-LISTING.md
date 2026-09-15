@@ -1,19 +1,26 @@
 # Store listing copy
 
-Working draft for both stores. **The name is not settled — see the warning below.**
+Copy for both stores.
 
-## ⚠️ Decide the name before submitting
+## Name
 
-The current manifest name, `GitHub Actions: Pins & Filter`, leads with someone else's trademark and
-reads like a GitHub product. Chrome's policy forbids representing that a product is "authorized by,
-endorsed by, or produced by another company", and listings heavy with third-party product names are
-a common rejection. Mozilla's own convention is `<Add-on name> for <Product>`.
+**Shortlist for GitHub Actions.** The brand is the one word, *Shortlist*.
 
-Suggested: **Workflow Favorites for GitHub Actions**. Your name first, the product second,
-mentioned once per listing field. Whatever you pick, change it in `manifest.json` and here together.
+The earlier name, `GitHub Actions: Pins & Filter`, led with someone else's trademark and read like
+a GitHub product. Chrome's policy forbids representing that a product is "authorized by, endorsed
+by, or produced by another company", and third-party-name-heavy listings are a common rejection.
+Google's own branding guidance endorses the `<Name> for <Product>` pattern, and it is Mozilla's
+stated convention too.
 
-Mention "GitHub" **once** in the name, once in the short description, and sparingly in the long
-description. Repetition across all three reads as keyword stuffing and gets rejected on its own.
+Keep "GitHub" to **once** in the name, once in the short description, and sparingly in the long
+one. Repeating it across all three reads as keyword stuffing and is rejected on its own.
+
+## Prior art
+
+[GitHub Actions Workflow Filter](https://chromewebstore.google.com/detail/github-actions-workflow-f/mcndebekenfmejfkhooeiejoekjcehlk)
+already ships a similar idea on the Chrome Web Store. Worth knowing two things. It proves Chrome
+accepted a name that does lead with the trademark, so that is a risk rather than a certainty. And
+the listing has to read as its own thing, not as a near-duplicate.
 
 ## Short description (132 characters max)
 
@@ -48,7 +55,7 @@ description. Repetition across all three reads as keyword stuffing and gets reje
 > machine. Your choice, in the options page.
 >
 > No account, no analytics, no telemetry, no server. It talks to github.com and nothing else.
-> Open source: https://github.com/nealmanaktola/gha-workflow-pins
+> Open source: https://github.com/nealmanaktola/shortlist-gha
 
 ## Category
 
@@ -85,8 +92,8 @@ Regenerate with `npm run screenshot`. A 1400×560 marquee tile is optional and n
 
 ## Submission checklist
 
-- [ ] Name decided and changed in `manifest.json`, `package.json` and here
-- [ ] `browser_specific_settings.gecko.id` final — **changing it after release empties every user's favorites**
+- [x] Name decided and applied in `manifest.json`, `package.json` and here
+- [x] `browser_specific_settings.gecko.id` final: `shortlist@nealmanaktola.github.io` — **changing it after release empties every user's favorites**
 - [ ] Version bumped, `CHANGELOG.md` updated
 - [ ] `npm test` and `npm run verify:sidebar` both clean
 - [ ] Manual Firefox pass (see `CONTRIBUTING.md`) — no automation covers Firefox

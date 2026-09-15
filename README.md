@@ -1,4 +1,6 @@
-# GitHub Actions: Pins & Filter
+# Shortlist for GitHub Actions
+
+Favorite the workflows you actually use, and filter the whole list.
 
 A Firefox and Chrome extension. It adds three things to the GitHub Actions sidebar:
 
@@ -141,12 +143,11 @@ script returns immediately and touches nothing.
 a submission checklist. `PRIVACY.md` is the privacy policy; both stores need it at a public URL.
 `store/` holds the assets at the exact sizes Chrome requires.
 
-Two things to settle before the first public build:
+Both of the settle-first decisions are made: the extension is **Shortlist for GitHub Actions**, and
+the Firefox id is `shortlist@nealmanaktola.github.io`. Storage is keyed to that id, so it does not
+change again — doing so after release would empty every user's favorites.
 
-1. **The name.** `GitHub Actions: Pins & Filter` leads with someone else's trademark and reads like
-   a GitHub product. See `STORE-LISTING.md`.
-2. **`browser_specific_settings.gecko.id`.** Storage is keyed to it. Change it after release and
-   every user's favorites vanish.
+What is left is the manual Firefox pass in `CONTRIBUTING.md`, which no automation covers.
 
 ## Develop
 

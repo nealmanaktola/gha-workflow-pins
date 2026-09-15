@@ -1,8 +1,8 @@
 {
-  "name": "gha-workflow-pins",
+  "name": "shortlist-gha",
   "version": "1.0.0",
   "private": true,
-  "description": "Firefox and Chrome extension: private per-user pinned workflows and a live filter for the GitHub Actions sidebar.",
+  "description": "Firefox and Chrome extension: private per-user favorites and a filter for the GitHub Actions sidebar.",
   "scripts": {
     "test": "node --test 'test/*.test.js'",
     "icons": "python3 tools/make_icons.py",
@@ -13,6 +13,6 @@
     "verify:sidebar": "node tools/verify-sidebar.mjs"
   },
   "license": "MIT",
-  "homepage": "https://github.com/nealmanaktola/gha-workflow-pins",
+  "homepage": "https://github.com/nealmanaktola/shortlist-gha",
   "author": "Neal Manaktola"
 }

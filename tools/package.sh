@@ -11,11 +11,11 @@ out="dist"
 mkdir -p "$out"
 rm -f "$out"/*.zip
 
-zip -qr "$out/gha-workflow-pins-$version.zip" \
+zip -qr "$out/shortlist-gha-$version.zip" \
   manifest.json src icons \
   -x '*.DS_Store'
 
-cp "$out/gha-workflow-pins-$version.zip" "$out/gha-workflow-pins-$version-chrome.zip"
+cp "$out/shortlist-gha-$version.zip" "$out/shortlist-gha-$version-chrome.zip"
 
-echo "Firefox (AMO): $out/gha-workflow-pins-$version.zip"
-echo "Chrome Web Store: $out/gha-workflow-pins-$version-chrome.zip"
+echo "Firefox (AMO): $out/shortlist-gha-$version.zip"
+echo "Chrome Web Store: $out/shortlist-gha-$version-chrome.zip"

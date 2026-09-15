@@ -51,4 +51,4 @@ own schedule.
 
 ## Contact
 
-Open an issue: https://github.com/nealmanaktola/gha-workflow-pins/issues
+Open an issue: https://github.com/nealmanaktola/shortlist-gha/issues
