@@ -202,6 +202,37 @@ check(
 );
 check('the favorite is still there four seconds later', settled.favorites === 1, `${settled.favorites}`);
 
+// A workflow run page has no workflow sidebar. Nothing must be injected there:
+// the header bar carries workflow links, and the filter box used to land in it
+// as a full-width banner across the top of the page.
+const runPage = await context.newPage();
+await runPage.goto(URL, { waitUntil: 'domcontentloaded' });
+await runPage.waitForTimeout(3000);
+const runHref = await runPage.evaluate(() => {
+  const a = [...document.querySelectorAll('a[href*="/actions/runs/"]')][0];
+  return a ? a.getAttribute('href') : null;
+});
+if (runHref) {
+  // Built by hand: the URL constant above shadows the global URL constructor.
+  await runPage.goto(`https://github.com${runHref}`, { waitUntil: 'domcontentloaded' });
+  await runPage.waitForTimeout(4000);
+  const injected = await runPage.evaluate(() => {
+    const wrap = document.querySelector('.ghapin-filter-wrap');
+    return {
+      filter: document.querySelectorAll('.ghapin-filter').length,
+      rows: document.querySelectorAll('.ghapin-row').length,
+      width: wrap ? Math.round(wrap.getBoundingClientRect().width) : 0,
+    };
+  });
+  check(
+    'nothing is injected on a workflow run page',
+    injected.filter === 0 && injected.rows === 0,
+    injected.filter ? `filter box ${injected.width}px wide, ${injected.rows} rows` : 'clean'
+  );
+} else {
+  check('nothing is injected on a workflow run page', false, 'could not find a run link to test');
+}
+
 // A failed partial load must not take the favorites, or the headers, with it.
 // This is what Firefox does until the user grants access to github.com.
 const blocked = await context.newPage();

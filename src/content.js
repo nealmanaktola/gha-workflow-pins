@@ -28,7 +28,11 @@
   // The script is injected across github.com, because GitHub navigates with
   // Turbo and a narrower match would never inject when the user arrives at
   // Actions from another page. Everywhere else it does nothing.
-  const onActionsPage = () => /^\/[^/]+\/[^/]+\/actions(?:\/|$)/.test(location.pathname);
+  // Only the two views that carry the workflow sidebar. A run page lives under
+  // /actions too, but has no sidebar, so there is nothing there to decorate.
+  const onActionsPage = () =>
+    /^\/[^/]+\/[^/]+\/actions\/?$/.test(location.pathname) ||
+    /^\/[^/]+\/[^/]+\/actions\/workflows\/.+$/.test(location.pathname);
 
   // The path after /actions/workflows/ identifies the workflow. It is usually
   // a filename, but Copilot and Dependabot entries add a path segment.
@@ -37,20 +41,31 @@
     return decodeURIComponent(path.split('/actions/workflows/')[1] || '');
   };
 
-  const isWorkflowLink = (a) => WORKFLOW_PATH.test(new URL(a.href, location.origin).pathname);
+  // A sidebar workflow link is a bare path. Anything carrying a query string
+  // is a run-list pagination link, which points at the same path and would
+  // otherwise be counted as a workflow.
+  const isWorkflowLink = (a) => {
+    const url = new URL(a.href, location.origin);
+    return !url.search && !url.hash && WORKFLOW_PATH.test(url.pathname);
+  };
 
   const workflowAnchors = (root) =>
     [...root.querySelectorAll('a[href*="/actions/workflows/"]')].filter(isWorkflowLink);
 
-  // The sidebar is the element holding the most workflow links. Deriving it
-  // this way survives GitHub renaming its CSS classes, which it does often.
+  // The sidebar is the list holding the most workflow links. Deriving it this
+  // way survives GitHub renaming its CSS classes, which it does often.
+  //
+  // It has to be an actual list of list items. A run page carries workflow
+  // links in its header bar and has no sidebar at all, and without this the
+  // filter and the favorites were injected into that header: a full-width
+  // banner across the top of the page.
   function findList() {
     const counts = new Map();
     for (const anchor of workflowAnchors(document)) {
-      const row = anchor.closest('li') || anchor.parentElement;
+      const row = anchor.closest('li');
       if (!row) continue;
       const parent = row.parentElement;
-      if (!parent) continue;
+      if (!parent || (parent.tagName !== 'UL' && parent.tagName !== 'OL')) continue;
       const entry = counts.get(parent) || new Map();
       if (!entry.has(row)) entry.set(row, anchor);
       counts.set(parent, entry);
